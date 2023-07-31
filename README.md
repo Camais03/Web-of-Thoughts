@@ -23,7 +23,7 @@ Continuing a thought can get expensive as we run through the process of linking 
 ### Model Type:
 You can select the model type based on the models you have access to.
 
-### Features:
+## Features:
 When loaded the you can drag any of the mindmap nodes around and click on a thought to get a sidebar with more information (linked thoughts, continued thoughts, etc.).
 
 You can save and load mindmaps in a JSON format.

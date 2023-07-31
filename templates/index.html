@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title> Web of Thoughts</title>
+	<script src="https://d3js.org/d3.v7.js"></script>
+	<style>	
+	    body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+			overflow-x: auto; /* Enable horizontal overflow for the entire webpage */
+        }
+        
+		#controls-container {
+			z-index: 12;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+			text-align: center;
+			margin-bottom: 20px;
+			margin-top: 50px; /* Add this line to push it down */
+        }
+
+        #controls {
+			font-family: "Roboto"
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+		
+		#mindmap-container {
+			z-index: 10;
+			position: absolute; /* Set the mind map container as relative */
+			display: flex;
+			justify-content: center;
+			flex-wrap: wrap;
+			top: 100px; /* Adjust this value to create space between controls and mind map */
+		}
+	
+		#sidebar {
+			position: fixed;
+			z-index: 11;
+			right: 0;
+			width: 250px; /* or any width you want */
+			bottom: 1px;
+			height: 100%;
+			overflow: auto;
+			background-color: #f4f4f4; /* or any color you prefer */
+			padding: 1px;
+			border-left: 1px solid #ccc;
+			/* Hide sidebar by default */
+			display: none;
+		}
+		
+		#unified-solution-container {
+		  z-index: 12;
+		  margin-top: 20px; /* Adjust the value as per your preference */
+		  text-align: center; /* Center the textarea below the controls */
+		  margin-bottom: 20px;
+		}
+
+		#unified-solution {
+		  width: 650px; /* Set the width as needed */
+		  height: 200px; /* Set the initial height as needed */
+		  resize: vertical; /* Allow vertical resizing if needed */
+		  font-family: "Roboto"; /* Set the font family as needed */
+		  margin-top: 20px; /* Adjust the value as per your preference */
+		  text-align: center; /* Center the textarea below the controls */
+		  position: relative; /* Add this line */
+		}
+
+		#sidebar, #closeButton {
+			display: none;
+		}
+		
+		.low-opacity {
+			opacity: 0.3 !important;
+		}
+	</style>
+</head>
+<body>
+    <div id="controls-container">
+        <h1>Web of Thoughts</h1>
+        <div id="controls">
+            <button id="startButton">Start</button>
+            <button id="saveButton">Save</button>
+            <input type="file" id="loadInput">
+
+            <select id="taskTypeDropdown">
+                <option value="solutions">Solutions</option>
+                <option value="ideas">Ideas</option>
+                <option value="thoughts">Thoughts</option>
+            </select>
+
+            <select id="continueThoughtsDropdown">
+                <option value="0">0 Continue</option>
+                <option value="1">1 Continue</option>
+                <option value="2">2 Continue</option>
+                <option value="3">3 Continue</option>
+                <option value="4">4 Continue</option>
+                <option value="5">5 Continue</option>
+            </select>
+			
+			<select id="modelDropdown">
+                <option value="gpt-4">gpt-4</option>
+				<option value="gpt-4-0613">gpt-4-0613</option>
+                <option value="gpt-3.5-turbo" selected>gpt-3.5-turbo</option>
+                <option value="gpt-3.5-turbo-16k">gpt-3.5-turbo-16k</option>
+                <option value="gpt-3.5-turbo-0613">gpt-3.5-turbo-0613</option>
+                <option value="gpt-3.5-turbo-16k-0613">gpt-3.5-turbo-16k-0613</option>
+            </select>
+			
+			<button id="zoom_in">Zoom In</button>
+			<button id="zoom_out">Zoom Out</button>
+        </div>	
+	</div>
+	
+	<div id="unified-solution-container">
+		<h2>Unified Solution:</h2>
+		<textarea id="unified-solution" readonly></textarea>
+	</div>
+	
+	<div id="mindmap-container">
+		<div id="mindmap"></div>
+	</div>
+	
+	<div id="sidebar">
+		<button id="closeButton" style="float: right;">X</button>
+		<div id="sidebarContent"></div>
+	</div>
+	
+	<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+	<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+
+	
+	<script>
+		var radius = 500; // Radius of the circle in which thoughts will be positioned
+
+		function generateMindMap(thoughts, linked_thoughts, thoughtsWithCritiques, task, unified_solution) {
+			var svg = d3.select("#mindmap-container").append("svg")
+			
+			function setSize(num_thoughts) {
+
+				var baseRadius = 2000;
+
+				// Calculate the radius based on the number of thoughts
+				var radius = Math.sqrt(num_thoughts) * baseRadius;
+
+				// Calculate the desired position and size of the SVG
+				var mindmapWidth = radius; // Adjust this value as per your requirements
+				var mindmapHeight = radius; // Adjust this value as per your requirements
+				
+				var mindmapX = 0
+				var mindmapY = document.getElementById('unified-solution').offsetHeight + 450; // Add 20px or any value you need for the margin
+							
+				console.log("Mindmap X:", mindmapX);
+				console.log("Mindmap Y:", mindmapY);
+
+				// The size of the SVG is fixed (mindmapWidth x mindmapHeight)
+				var size = Math.min(mindmapWidth, mindmapHeight);
+
+				// Apply the scaling factor to the size to get the adjusted size
+				var adjustedSize = size * 0.25; // Replace 0.25 with your desired scaling factor
+
+				svg = d3.select("#mindmap-container").append("svg")
+					.attr("width", adjustedSize)
+					.attr("height", adjustedSize)
+					.style("position", "relative") // Set the position to relative
+					.style("left", mindmapX + "px") // Set the horizontal position
+					.style("top", mindmapY + "px") // Set the vertical position
+					.style("border", "2px solid black"); // Add a black border with 2px width
+				console.log(size);
+
+				return adjustedSize; // Return the adjusted size
+			}
+			
+			if (!svg.empty()) {
+				d3.select("#mindmap").select("svg").remove();
+				d3.select("#mindmap-container").select("svg").remove();
+				// Calculate SVG size based on the number of thoughts
+				var size = setSize(thoughts.length);
+				// Set the position of the prompt node at the center of the mindmap
+				promptPosition = { x: size , y: size };
+			}
+			else {
+				// Calculate SVG size based on the number of thoughts
+				var size = setSize(thoughts.length);
+				// Set the position of the prompt node at the center of the mindmap
+				promptPosition = { x: size , y: size };
+			}
+			
+
+			
+			let g = svg.append("g");
+
+			console.log(promptPosition)
+			
+			// set initial scale
+			let currentScale = 1;
+
+			// Define the zoom behaviour
+			let zoom = d3.zoom()
+				.scaleExtent([0.1, 40])  // This control how much you can unzoom (x0.1) and zoom (x40)
+				.on("zoom", function(event) {
+					g.attr("transform", event.transform);
+					currentScale = event.transform.k;  // update current scale
+				});
+				
+			svg.call(zoom); // attach zoom behaviour to the svg element
+
+			svg.call(zoom.transform, d3.zoomIdentity
+				.scale(0.5));
+				
+			// handle zoom in button click
+			document.getElementById("zoom_in").addEventListener("click", function() {
+				currentScale = currentScale + 0.1;
+				svg.transition()
+				   .duration(750)
+				   .call(zoom.scaleTo, currentScale);
+			});
+
+			// handle zoom out button click
+			document.getElementById("zoom_out").addEventListener("click", function() {
+				if (currentScale > 0.1) {
+					currentScale = currentScale - 0.1;
+					svg.transition()
+					   .duration(750)
+					   .call(zoom.scaleTo, currentScale);
+				}
+			});
+			
+			if (unified_solution) {
+			  var unifiedSolutionTextArea = document.getElementById('unified-solution');
+			  unifiedSolutionTextArea.value = unified_solution;
+
+			  var minTextAreaSize = 100; // Minimum size for the textarea
+			  var maxTextAreaSize = 150; // Maximum size for the textarea
+			  var textAreaSize = Math.min(maxTextAreaSize, Math.max(minTextAreaSize, unified_solution.length * 10));
+
+			 // Adjust the textarea size based on its content and add an extra margin
+			  unifiedSolutionTextArea.style.height = '';
+			  unifiedSolutionTextArea.style.height = unifiedSolutionTextArea.scrollHeight + 20 + 'px'; // Add 20px or any value you need for the margin
+
+			  unifiedSolutionTextArea.style.width = '';
+			  unifiedSolutionTextArea.style.width = unifiedSolutionTextArea.scrollWidth + 'px';
+			}
+
+		
+			function clampSize(size, min, max) {
+				return Math.max(min, Math.min(size, max));
+			}					
+			
+			// Create a lookup table (map object)
+			var thoughtsMap = thoughts.reduce(function(map, thought) {
+				map[thought.id] = thought;
+				return map;
+			}, {});
+
+			// Assign unique id to each thought using its 'ID' field if it exists
+			thoughts.forEach(function(thought, i) {
+				thought.circleRadius = Math.sqrt(thought.text.Item.length) * 10
+				if (thought.text && thought.text.ID) {
+					thought.id = 'thought-' + thought.text.ID
+				} else {
+					thought.id = 'thought-' + i;
+				}
+			});
+
+			// Create a lookup table (map object)
+			var thoughtsMap = thoughts.reduce(function(map, thought) {
+				map[thought.id] = thought;
+				return map;
+			}, {});
+
+			var normalThoughts = thoughts.filter(thought => thought.text.Type !== 'Continued Thought');
+
+			thoughts.forEach(function(thought, i) {
+				if (thought.text.Type === 'Thought') {
+					var normalThoughtIndex = normalThoughts.findIndex(t => t.id === thought.id);
+					if (normalThoughtIndex > -1) {
+						thought.angle = 2 * Math.PI * normalThoughtIndex / normalThoughts.length;
+					}
+				} else if (thought.text.Type === 'Continued Thought') {
+					var parentThought = thoughtsMap['thought-' + thought.text['Parent ID']];
+					if (parentThought) {
+						thought.angle = parentThought.angle;
+						thought.circleRadius = parentThought.circleRadius
+					} else {
+						console.error('ParentID not found')
+					}
+				}
+			});
+
+
+			function calculatePosition(d, radius) {
+				var extraRadius = 0;
+				var adjustedRadius = radius + Math.floor(thoughts.length / 1) * 25;
+				var currentThought = d; // currentThought is initialized here
+
+				while (currentThought.text && currentThought.text.Type === 'Continued Thought') {
+					var parentThought = thoughtsMap['thought-' + currentThought.text['Parent ID']];
+					if (parentThought) {
+						extraRadius += parentThought.circleRadius * 2.5;
+						currentThought = parentThought;  // continue with the parent thought in the next iteration
+					} else {
+						break;  // if no parent thought is found, break the loop
+					}
+				}
+
+				var x = promptPosition.x + (adjustedRadius + extraRadius) * Math.cos(d.angle);
+				var y = promptPosition.y + (adjustedRadius + extraRadius) * Math.sin(d.angle);
+
+				if(isNaN(x) || isNaN(y)) {
+					console.log('NaN found', d, x, y, adjustedRadius, extraRadius, d.angle);
+				}
+				
+				return [x, y];
+			}
+			
+			// Add lines to the SVG
+			g.selectAll("line.thought-line")
+				.data(thoughts)  // Use enrichedThoughts to have id available
+				.enter()
+				.append("line")
+				.attr("id", function(d) { return 'line-' + d.id; }) // Add unique id to each line
+				.attr("class", function(d, i) { return "thought-line-" + i; }) // Individual class names for each line
+				.attr("x1", function(d) {
+					if (d.text.Type === 'Continued Thought') {
+						var parentThought = thoughtsMap['thought-' + d.text['Parent ID']];
+						if (parentThought) {
+							var parentPos = calculatePosition(parentThought, radius);
+							return parentPos[0]; // x-coordinate of parent thought
+						}
+					}
+					return promptPosition.x;  // if not a 'Continued Thought', or if parent not found, start from center of the prompt
+				})
+				.attr("y1", function(d) {
+					if (d.text.Type === 'Continued Thought') {
+						var parentThought = thoughtsMap['thought-' + d.text['Parent ID']];
+						if (parentThought) {
+							var parentPos = calculatePosition(parentThought, radius);
+							return parentPos[1]; // y-coordinate of parent thought
+						}
+					}
+					return promptPosition.y;  // if not a 'Continued Thought', or if parent not found, start from center of the prompt
+				})
+				.attr("x2", function(d) {
+					var position = calculatePosition(d, radius);
+					return position[0];  // X-coordinate of the ending point
+				})
+				.attr("y2", function(d) {
+					var position = calculatePosition(d, radius);
+					return position[1];  // Y-coordinate of the ending point
+				})
+				.attr("stroke-width", 4)
+				.attr("stroke", "black");
+
+								
+			// Create a circle for the initial prompt
+			var prompt = g.append("circle")
+				.data([{x: promptPosition.x, y: promptPosition.y}])  // bind data with x and y attributes
+				.attr("class", "prompt")
+				.attr("cx", promptPosition.x)
+				.attr("cy", promptPosition.y)
+				 .attr("r", function(d) { 
+					// Calculate radius based on the length of the task
+					var baseRadius = 100;
+					var additionalRadius = Math.sqrt(task.length) * 10;  // Adjust the scale as necessary
+					return baseRadius + additionalRadius;
+				})
+				.style("fill", "lightgray")
+				.style("stroke", "black")
+				.style("stroke-width", "2px")
+				.on("click", function (d, i) {
+					alert(task);
+				})
+
+			// Create a label for the initial prompt
+			g.append("foreignObject")
+				.attr("x", promptPosition.x - 100)
+				.attr("y", promptPosition.y - 100)
+				.attr("width", 200)
+				.attr("height", 200)
+				.append("xhtml:div")
+				.style("display", "flex")
+				.style("justify-content", "center")
+				.style("align-items", "center")
+				.style("width", "100%")
+				.style("height", "100%")
+				.style("font", "24px roboto")
+				.style("text-align", "center")
+				.style("word-wrap", "break-word")
+				.text(task);
+			
+			function dragstarted(event) {
+				// store the current transformation of the svg element
+				var currentTransform = d3.select(this).attr("transform") || "";
+				d3.select(this).attr("data-current-transform", currentTransform);
+				
+				// store the initial position of the drag
+				d3.select(this).attr("data-start-x", event.x);
+				d3.select(this).attr("data-start-y", event.y);
+			}
+
+			function dragged(event) {
+				// use stored transformation and apply new drag displacement
+				var currTransform = d3.select(this).attr("data-current-transform");
+
+				var startX = parseFloat(d3.select(this).attr("data-start-x"));
+				var startY = parseFloat(d3.select(this).attr("data-start-y"));
+				
+				// calculate displacement relative to the starting point
+				var dx = event.x - startX;
+				var dy = event.y - startY;
+				
+				var newTransform = "translate(" + dx + "," + dy + ") " + currTransform;
+				d3.select(this).attr("transform", newTransform);
+			}
+
+			function dragended(event) {
+				// when the drag event ends, remove the stored transform
+				d3.select(this).attr("data-current-transform", null);
+				d3.select(this).attr("data-start-x", null);
+				d3.select(this).attr("data-start-y", null);
+			}
+
+			var drag = d3.drag()
+				.on("start", dragstarted)
+				.on("drag", dragged)
+				.on("end", dragended);
+
+			svg.call(drag);
+
+			
+			function calculateMidPoint(position1, position2) {
+				return [
+					(position1[0] + position2[0]) / 2,  // mid-point x-coordinate
+					(position1[1] + position2[1]) / 2   // mid-point y-coordinate
+				];
+			}
+
+			g.append("defs").append("marker")
+				.attr("id", "arrowhead")
+				.attr("viewBox", "-0 -5 10 10")
+				.attr("refX", 50)  // Adjust these two parameters to move the arrowhead position
+				.attr("refY", 0)
+				.attr("orient", "auto")
+				.attr("markerWidth", 10)
+				.attr("markerHeight", 10)
+				.attr("xoverflow", "visible")
+				.append("svg:path")
+				.attr("d", "M 0,-5 L 10 ,0 L 0,5")
+				.attr("fill", "blue")
+				.style("stroke","none");
+
+			
+			// Add lines for the links
+			if (linked_thoughts.length === 0) {
+				return;  // exit the function early if there are no linked thoughts
+			} else {
+			var linkEnterFirst = g.selectAll("line.link-line-first")
+				.data(linked_thoughts)
+				.enter()
+				.append("line");
+			
+				linkEnterFirst.attr("id", function(d) {
+					return 'link-line-' + d.source + '-' + d.target;  // Add unique id to each link line
+				})
+				.attr("class", function(d) {
+					return "link-line link-line-first source-" + d.source + " target-" + d.target;
+				})
+				.attr("x1", function(d) {
+					// Get the source thought object
+					var sourceThought = thoughts[d.source];
+					// Calculate the position of the source thought
+					var position = calculatePosition(sourceThought, radius);
+					// Return the x-coordinate of the source thought
+					return position[0];
+				})
+				.attr("y1", function(d) {
+					// Get the source thought object
+					var sourceThought = thoughts[d.source];
+					// Calculate the position of the source thought
+					var position = calculatePosition(sourceThought, radius);
+					// Return the x-coordinate of the source thought
+					return position[1];
+				})
+				.attr("x2", function(d) {
+					// Get the target thought object
+					var targetThought = thoughts[d.target];
+					// Calculate the position of the target thought
+					var targetPosition = calculatePosition(targetThought, radius);
+					// Get the source thought object
+					var sourceThought = thoughts[d.source];
+					// Calculate the position of the source thought
+					var sourcePosition = calculatePosition(sourceThought, radius);
+					// Calculate the mid-point between source and target thoughts
+					var midPoint = calculateMidPoint(sourcePosition, targetPosition);
+					// Return the x-coordinate of the mid-point
+					return midPoint[0];
+				})
+				.attr("y2", function(d) {
+					// Similar to the calculation of x2
+					// Get the target thought object
+					var targetThought = thoughts[d.target];
+					// Calculate the position of the target thought
+					var targetPosition = calculatePosition(targetThought, radius);
+					// Get the source thought object
+					var sourceThought = thoughts[d.source];
+					// Calculate the position of the source thought
+					var sourcePosition = calculatePosition(sourceThought, radius);
+					// Calculate the mid-point between source and target thoughts
+					var midPoint = calculateMidPoint(sourcePosition, targetPosition);
+					// Return the y-coordinate of the mid-point
+					return midPoint[1];
+				})
+				.attr("stroke-width", 2)
+				.attr("stroke", "blue")  // or any other color you prefer
+				.attr("marker-end", "url(#arrowhead)");
+				}
+
+
+			// Add lines for the links
+			if (linked_thoughts.length === 0) {
+				return;  // exit the function early if there are no linked thoughts
+			} else {		
+			var linkEnterSecond = g.selectAll("line.link-line-second")
+				.data(linked_thoughts)
+				.enter()
+				.append("line");
+			
+				linkEnterSecond.attr("id", function(d) {
+					return 'link-line-' + d.source + '-' + d.target;  // Add unique id to each link line
+				})
+				.attr("class", function(d) {
+					return "link-line link-line-second source-" + d.source + " target-" + d.target;
+				})
+				.attr("x1", function(d) {
+					// Get the source thought object
+					var targetThought = thoughts[d.target];
+					// Calculate the position of the source thought
+					var position = calculatePosition(targetThought, radius);
+					// Return the x-coordinate of the source thought
+					return position[0];
+				})
+				.attr("y1", function(d) {
+					// Get the source thought object
+					var targetThought = thoughts[d.target];
+					// Calculate the position of the source thought
+					var position = calculatePosition(targetThought, radius);
+					// Return the x-coordinate of the source thought
+					return position[1];
+				})
+				.attr("x2", function(d) {
+					// Get the target thought object
+					var sourceThought = thoughts[d.source];
+					// Calculate the position of the target thought
+					var sourcePosition = calculatePosition(sourceThought, radius);
+					// Get the source thought object
+					var targetThought = thoughts[d.target];
+					// Calculate the position of the source thought
+					var targetPosition = calculatePosition(targetThought, radius);
+					// Calculate the mid-point between source and target thoughts
+					var midPoint = calculateMidPoint(targetPosition, sourcePosition);
+					// Return the y-coordinate of the mid-point
+					return midPoint[0];
+				})
+				.attr("y2", function(d) {
+					// Get the target thought object
+					var sourceThought = thoughts[d.source];
+					// Calculate the position of the target thought
+					var sourcePosition = calculatePosition(sourceThought, radius);
+					// Get the source thought object
+					var targetThought = thoughts[d.target];
+					// Calculate the position of the source thought
+					var targetPosition = calculatePosition(targetThought, radius);
+					// Calculate the mid-point between source and target thoughts
+					var midPoint = calculateMidPoint(targetPosition, sourcePosition);
+					// Return the y-coordinate of the mid-point
+					return midPoint[1];
+				})
+				.attr("stroke-width", 2)
+				.attr("stroke", "blue")  // or any other color you prefer
+				.attr("marker-end", "url(#arrowhead)");
+				}
+				
+			// Add circles for the link reasons
+			g.selectAll("circle.reason-circle")
+				.data(linked_thoughts)
+				.enter()
+				.append("circle")
+				.attr("class", "reason-circle")
+				.attr("cx", function(d) {
+					// Get the source and target thought objects
+					var sourceThought = thoughts[d.source];
+					var targetThought = thoughts[d.target];
+					// Calculate the positions of the source and target thoughts
+					var sourcePosition = calculatePosition(sourceThought, radius);
+					var targetPosition = calculatePosition(targetThought, radius);
+					// Return the x-coordinate of the reason circle (midpoint of the source and target x-coordinates)
+					return (sourcePosition[0] + targetPosition[0]) / 2;
+				})
+				.attr("cy", function(d) {
+					// Get the source and target thought objects
+					var sourceThought = thoughts[d.source];
+					var targetThought = thoughts[d.target];
+					// Calculate the positions of the source and target thoughts
+					var sourcePosition = calculatePosition(sourceThought, radius);
+					var targetPosition = calculatePosition(targetThought, radius);
+					// Return the y-coordinate of the reason circle (midpoint of the source and target y-coordinates)
+					return (sourcePosition[1] + targetPosition[1]) / 2;
+				})
+				.attr("r", 20)  // or any other radius you prefer
+				.attr("class", function(d) { return "reason-circle source-" + d.source + " target-" + d.target; })
+				.style("fill", "lightblue")  // or any other color you prefer
+				.style("stroke", "black")
+				.style("stroke-width", "2px")
+				.on("click", function(event, d) {  // add a 'click' event listener
+					var sourceThought = thoughts[d.source].text.Item;
+					var targetThought = thoughts[d.target].text.Item;
+					alert("Source: " + sourceThought + "\nTarget: " + targetThought + "\nReason: " + d.reason);  // show an alert box with the source, target, and reason
+				})
+				.on("mouseover", function(event, d) {
+				
+					// Lower the opacity of all thought circles, reason circles and lines
+					svg.selectAll("circle.thought-circle, circle.reason-circle, line.link-line").classed("low-opacity", true);
+					svg.selectAll('[class^="thought-line"]').classed("low-opacity", true); // set all lines to low-opacity
+					
+					// Highlight the connected thoughts
+					svg.selectAll(".thought-" + d.source + ", .thought-" + d.target).classed("low-opacity", false);
+					
+					// Highlight the associated link lines
+					svg.selectAll(".source-" + d.source + ".target-" + d.target + ", .source-" + d.target + ".target-" + d.source).classed("low-opacity", false);
+				})
+				.on("mouseout", function(event, d) {
+					// Remove the low-opacity class from all elements when mouse leaves
+					svg.selectAll("circle.thought-circle, circle.reason-circle, line.link-line").classed("low-opacity", false);
+					svg.selectAll('[class^="thought-line"]').classed("low-opacity", false);
+				});
+
+		
+			// Define drag behavior for link circles
+			var dragLinkHandler = d3.drag()
+				.on("start", function (event, d) {
+					d3.select(this).raise().classed("active", true);
+					// Store the initial position of the circle
+					d.initialX = event.x;
+					d.initialY = event.y;
+				})
+				.on("drag", function (event, d) {
+					// Calculate the new position of the circle
+					var x = event.x;
+					var y = event.y;
+
+					// Calculate the displacement from the initial position
+					d.displacementX = x - d.initialX;
+					d.displacementY = y - d.initialY;
+
+					// Update the position of the circle
+					d3.select(this)
+						.attr("cx", d.initialX + d.displacementX)
+						.attr("cy", d.initialY + d.displacementY);
+
+					// Update the positions of lines that are connected to the dragged circle
+					d3.selectAll('.link-line-first.source-' + d.source + '.target-' + d.target) 
+						.attr("x2", x)
+						.attr("y2", y);
+
+					d3.selectAll('.link-line-second.source-' + d.source + '.target-' + d.target) 
+						.attr("x2", x)
+						.attr("y2", y);
+				})
+				.on("end", function (event) {
+					d3.select(this).classed("active", false);
+				});
+
+			// Apply drag behavior to link circles
+			dragLinkHandler(svg.selectAll("circle.reason-circle"));
+		
+			// First, create and initially position all thought groups
+			var thoughtGroups = g.selectAll("g.thought")
+				.data(thoughts) // Use enrichedThoughts to have circleRadius property available
+				.enter()
+				.append("g")
+				.attr("class", "thought")
+				.attr("id", function(d) { return "thought-" + d.id; }) // Set the id attribute here
+				.attr("transform", function(d) {
+					var position = calculatePosition(d, radius);
+					return "translate(" + position[0] + "," + position[1] + ")";
+				});
+
+			// Add circle to the group
+			thoughtGroups.append("circle")
+			    .attr("id", function(d) { return 'circle-' + d.id; }) // Unique ID for each circle
+				.attr("class", function(d) { return "thought-circle thought-" + d.id.split('-')[1]; }) // Individual class names for each circle
+				.attr("r", function(d) { return d.circleRadius; })
+				.attr("cx", 0)
+				.attr("cy", 0)
+				.style("fill", "white")
+				.style("stroke", "black")
+				.style("stroke-width", "2px");
+
+			// Add labels to the groups
+			thoughtGroups.append("foreignObject")
+				.attr("class", "thought-label") // Changed class name
+				.attr("x", function(d) { return -d.circleRadius; }) // Shift to the left
+				.attr("y", function(d) { return -d.circleRadius; }) // Shift up
+				.attr("width", function(d) { return d.circleRadius * 2; })
+				.attr("height", function(d) { return d.circleRadius * 2; })
+				.append("xhtml:div") // directly append div to foreignObject
+				.attr("class", "thought-text")
+				.html(function(d) {
+					var currentThoughtID = d.id.split('-')[1];
+					if (d.text.Item.length > 100) {
+						return "<strong>" + currentThoughtID + ":</strong> " + d.text.Item.slice(0, 100) + "...";  // Truncate the text and add ellipsis
+					} else {
+						return "<strong>" + currentThoughtID + ":</strong> " + d.text.Item;
+					}
+				})
+				.style("display", "flex")
+				.style("justify-content", "center")
+				.style("align-items", "center")
+				.style("width", "100%")
+				.style("height", "100%")
+				.style("font", "20px roboto")
+				.style("text-align", "center")
+				.style("word-wrap", "break-word")
+				.on("click", function (event, d) {
+					// Get the sidebar
+					var sidebar = document.getElementById('sidebar');
+					var sidebarContent = document.getElementById('sidebarContent');
+
+					// Clear the sidebar
+					sidebarContent.innerHTML = '';
+										
+					// Add information about the clicked thought
+					sidebarContent.innerHTML += '<h2>Thought Information</h2>';
+					sidebarContent.innerHTML += '<p><strong>ID:</strong> ' + d.id + '</p>';
+					sidebarContent.innerHTML += '<p><strong>Item:</strong> ' + d.text.Item + '</p>';
+					sidebarContent.innerHTML += '<p><strong>Type:</strong> ' + d.text.Type + '</p>';
+					sidebarContent.innerHTML += '<p><strong>Critique:</strong> ' + d.text.Critique + '</p>';
+									
+					// Find thoughts that are continued thoughts of this thought
+					var currentThoughtID = parseInt(d.id.split('-')[1]); // Get the current thought ID
+					var continuedThoughts = thoughts.filter(function(thought) {
+						return thought.text.Type === 'Continued Thought' && thought.text['Parent ID'] === currentThoughtID;
+					});
+
+					if (continuedThoughts.length > 0) {
+						sidebarContent.innerHTML += '<h2>Continued Thoughts</h2>';
+						continuedThoughts.forEach(function(thought, index) {
+							sidebarContent.innerHTML += '<p><strong>Continued Thought ' + (index + 1) + ' ID:</strong> thought-' + thought.id + '</p>';
+							sidebarContent.innerHTML += '<p><strong>Item:</strong> ' + thought.text.Item + '</p>';
+						});
+					}
+
+					// If this thought is a Continued Thought, show the parent thought
+					var parentThought = thoughts.find(function(thought) {
+						return parseInt(thought.id.split('-')[1]) === d.text['Parent ID'];
+					});
+					
+					if (parentThought) {
+						sidebarContent.innerHTML += '<h2>Continued From</h2>';
+						sidebarContent.innerHTML += '<p><strong>Parent Thought ID:</strong> thought-' + parentThought.id + '</p>';
+						sidebarContent.innerHTML += '<p><strong>Item:</strong> ' + parentThought.text.Item + '</p>';
+					}
+
+					// Find thoughts connected to this thought and add their information
+					var currentThoughtID = parseInt(d.id.split('-')[1]); // Get the current thought ID
+					console.log('Current Thought ID:', currentThoughtID);  // Log the current thought ID
+					var connectedLinks = linked_thoughts.filter(function(link) {
+						return link.source == currentThoughtID || link.target == currentThoughtID;
+					});
+					console.log('Connected Links:', connectedLinks);  // Log the connected links
+					connectedLinks.forEach(function(link, index) {
+						var connectedThought = thoughts[link.source == currentThoughtID ? link.target : link.source];
+						console.log('Connected Thought:', connectedThought);  // Log the connected thought
+						sidebarContent.innerHTML += '<h2>Connected Thought ' + (index + 1) + '</h2>'; // Separate header for each connected thought
+						sidebarContent.innerHTML += '<p><strong>ID:</strong> ' + connectedThought.id + '</p>';
+						sidebarContent.innerHTML += '<p><strong>Item:</strong> ' + connectedThought.text.Item + '</p>';
+						sidebarContent.innerHTML += '<p><strong>Type:</strong> ' + connectedThought.text.Type + '</p>';
+						sidebarContent.innerHTML += '<p><strong>Critique:</strong> ' + connectedThought.text.Critique + '</p>';
+						sidebarContent.innerHTML += '<p><strong>Link Reason:</strong> ' + link.reason + '</p>';
+					});
+
+					// Show the sidebar
+					sidebar.style.display = 'block';
+					document.getElementById('closeButton').style.display = 'block';
+				})
+				.on("mouseenter", function (event, d) {
+					// Get the current thought ID
+					var currentThoughtID = d.id.split('-')[1];
+				
+					// Lower the opacity of all thought circles, reason circles and lines
+					svg.selectAll("circle.thought-circle, circle.reason-circle, line.link-line").classed("low-opacity", true);
+					svg.selectAll('[class^="thought-line"]').classed("low-opacity", true); // set all lines to low-opacity
+					
+					// Highlight the hovered thought circle
+					d3.select(this.parentNode.parentNode).select("circle").classed("low-opacity", false);
+					
+					// Remove low-opacity from the thought text of the hovered thought
+					d3.select(this.parentNode.parentNode).select("foreignObject div").classed("low-opacity", false);
+
+					// Highlight associated link lines
+					svg.selectAll(".source-" + currentThoughtID + ", .target-" + currentThoughtID).classed("low-opacity", false);
+					
+					// Highlight the associated link lines and the thoughts they connect to
+					linked_thoughts.forEach(function(link) {
+						if (link.source == currentThoughtID || link.target == currentThoughtID) {
+							// Highlight associated source thought
+							let source = svg.select(".thought-" + link.source).classed("low-opacity", false);
+							let sourceLabel = svg.select(".thought-" + link.source).select("foreignObject div").classed("low-opacity", false);
+
+							// Highlight associated target thought
+							let target = svg.select(".thought-" + link.target).classed("low-opacity", false);
+							let targetLabel = svg.select(".thought-" + link.target).select("foreignObject div").classed("low-opacity", false);
+						}
+					});
+					
+					// Highlight associated reason circles
+					svg.selectAll(".source-" + currentThoughtID + ", .target-" + currentThoughtID).classed("low-opacity", false);
+					
+					// Highlight associated thought lines
+					svg.select("#line-" + d.id).classed("low-opacity", false);
+					
+					// Highlight continued thoughts and their lines
+					thoughts.forEach(function(thoughtChild) {
+						if (thoughtChild.text.Type === 'Continued Thought' && 'thought-' + thoughtChild.text['Parent ID'] === d.id) {
+							console.log('Hovering over a parent thought with child: ', thoughtChild);
+							svg.select('#circle-' + thoughtChild.id).classed("low-opacity", false);
+							svg.select('#line-' + thoughtChild.id).classed("low-opacity", false);
+							svg.select('#circle-' + thoughtChild.id).select("foreignObject div").classed("low-opacity", false);
+						}
+					});
+					
+					// If the thought is a 'Continued Thought', find its parent thought and highlight it
+					if (d.text.Type === 'Continued Thought') {
+						var parentThoughtID = d.text['Parent ID'];
+						svg.select('.thought-' + parentThoughtID).classed("low-opacity", false);
+						svg.select('#line-thought-' + parentThoughtID).classed("low-opacity", false);
+						svg.select('.thought-' + parentThoughtID).select("foreignObject div").classed("low-opacity", false);
+					}
+
+				})
+				.on("mouseleave", function (event, d) {
+					// Remove the low-opacity class from all elements when mouse leaves
+					svg.selectAll("circle.thought-circle, circle.reason-circle, line.link-line, foreignObject div").classed("low-opacity", false);
+					svg.selectAll('[class^="thought-line"]').classed("low-opacity", false);
+				});
+				
+			document.getElementById('closeButton').addEventListener('click', function(event) {
+				event.stopPropagation();  // Stop the event from propagating further
+				document.getElementById('sidebar').style.display = 'none';
+			});	
+	
+			// Define drag behavior
+			var dragHandler = d3.drag()
+			.on("start", function (event, d) {
+			  d3.select(this).raise().classed("active", true);
+			})
+			.on("drag", function (event, d) {
+			  // Calculate the new position of the group
+			  var x = event.x;
+			  var y = event.y;
+
+			  // Update the position of the group
+			  d3.select(this)
+				.attr("transform", "translate(" + x + "," + y + ")");
+
+			  // Update the position of the line
+			  d3.select('#line-' + d.id) 
+				.attr("x2", x)
+				.attr("y2", y);
+				
+			  // Update the positions of lines that are connected to the dragged thought
+			  var thoughtIdNumber = d.id.split('-')[1];
+
+			  // When the dragged thought is the source of a link
+			  d3.selectAll('.link-line-first.source-' + thoughtIdNumber)
+				.attr("x1", x)
+				.attr("y1", y);
+
+			  // When the dragged thought is the target of a link
+			  d3.selectAll('.link-line-second.target-' + thoughtIdNumber)
+				.attr("x1", x)
+				.attr("y1", y);
+				
+				// Update the positions of 'Continued Thought' lines where the dragged thought is the parent
+				thoughts.forEach(function(thoughtChild) {
+					if (thoughtChild.text.Type === 'Continued Thought' && 'thought-' + thoughtChild.text['Parent ID'] === d.id) {
+						d3.select('#line-' + thoughtChild.id)
+							.attr("x1", x)
+							.attr("y1", y);
+					}
+				});
+
+
+
+			  console.log('Dragging thought with id: ', d.id);  // log the id of the dragged thought
+			})
+			.on("end", function (event) {
+			  d3.select(this).classed("active", false);
+			});
+
+			// Apply drag behavior to thought groups
+			dragHandler(thoughtGroups);
+
+			console.log('Saving unified_solution:', unified_solution);
+			function saveMindMap(thoughts, linked_thoughts, task, unified_solution) {
+				const data = {
+					thoughts: thoughts,
+					linked_thoughts: linked_thoughts,
+					task: task,
+					unified_solution: unified_solution
+				};
+				
+				const json = JSON.stringify(data);
+				const blob = new Blob([json], {type: 'application/json'});
+				const url = URL.createObjectURL(blob);
+
+				const link = document.createElement('a');
+				link.download = 'mindmap.json';
+				link.href = url;
+				link.click();
+
+				// Optional: remove the link after triggering the download
+				link.remove();
+			}
+			
+			document.getElementById('saveButton').addEventListener('click', function() {
+				saveMindMap(thoughts, linked_thoughts, task, unified_solution);
+			});
+		}
+				
+		function loadMindMap(file, callback) {
+			const reader = new FileReader();
+
+			reader.onload = function(event) {
+				const data = JSON.parse(event.target.result);
+				callback(data);
+			};
+
+			reader.readAsText(file);
+		}
+		
+		document.getElementById('loadInput').addEventListener('change', function() {
+			const file = this.files[0];
+			
+			loadMindMap(file, function(data) {
+				// The data loaded from the JSON file is now available here.
+				// You would update your `thoughts`, `linked_thoughts`, and `task` data 
+				// to match the loaded state.
+				thoughts = data.thoughts;
+				linked_thoughts = data.linked_thoughts;
+				thoughts_with_critiques = data.critiques;
+				task = data.task;
+
+				if (data.unified_solution) {  // Check if unified_solution exists in the response
+					unified_solution = data.unified_solution;
+					generateMindMap(thoughts, linked_thoughts, thoughts_with_critiques, task, unified_solution);
+				} else {
+					generateMindMap(thoughts, linked_thoughts, thoughts_with_critiques, task);
+				}
+
+			});
+		});
+
+		document.addEventListener("DOMContentLoaded", function() {
+			document.getElementById('unified-solution').value = "";
+			
+			function callApi(task, taskType, continueCount, model) {
+				$.ajax({
+					url: "/generate_and_link",
+					type: "POST",
+					contentType: 'application/json;charset=UTF-8',
+					data: JSON.stringify({
+						task: task,
+						taskType: taskType,
+						continueCount: continueCount,
+						model: model
+					}),
+					dataType: "json",
+					success: function(data, textStatus, jqXHR) {
+						console.log('Data from server:', data);
+						if (Array.isArray(data.thoughts) && Array.isArray(data.critiques)) {
+							var thoughts = data.thoughts;  // Define thoughts here
+							var linked_thoughts = data.linked_thoughts;  // I assume linked_thoughts and thoughts_with_critiques come from data too
+							var thoughts_with_critiques = data.thoughts_with_critiques;  
+							
+							if (data.unified_solution) {  // Check if unified_solution exists in the response
+								unified_solution = data.unified_solution;
+								generateMindMap(thoughts, linked_thoughts, thoughts_with_critiques, task, unified_solution);
+							} else {
+								generateMindMap(thoughts, linked_thoughts, thoughts_with_critiques, task);
+							}
+
+						} else {
+							console.error('Data received from /generate_and_link does not contain valid "thoughts" and "critiques" arrays');
+						}
+					},
+					error: function(jqXHR, textStatus, errorThrown) {
+						console.error('An error occurred during your request: ' +  textStatus + ' ' + errorThrown);
+						console.error(jqXHR.responseText); // Log the response text for more details
+					}
+				});             
+			}
+
+			document.getElementById("startButton").addEventListener("click", function() {
+				var task = prompt("Please enter your task", "Task example");
+				
+				var taskTypeDropdown = document.getElementById("taskTypeDropdown");
+				var taskType = taskTypeDropdown.options[taskTypeDropdown.selectedIndex].value;
+				
+				var modelDropdown = document.getElementById("modelDropdown");
+				var model = modelDropdown.options[modelDropdown.selectedIndex].value;
+
+				var continueThoughtsDropdown = document.getElementById("continueThoughtsDropdown");
+				var continueCount = continueThoughtsDropdown.options[continueThoughtsDropdown.selectedIndex].value;
+				
+				if (task != null && taskType != null) {
+					callApi(task, taskType, continueCount, model);
+				}
+			});
+		});
+
+	</script>
+</body>
+</html>

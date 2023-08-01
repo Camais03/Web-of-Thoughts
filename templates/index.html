@@ -45,7 +45,7 @@
 			position: fixed;
 			z-index: 11;
 			right: 0;
-			width: 250px; /* or any width you want */
+			width: 300px; /* or any width you want */
 			bottom: 1px;
 			height: 100%;
 			overflow: auto;
@@ -96,14 +96,7 @@
                 <option value="thoughts">Thoughts</option>
             </select>
 
-            <select id="continueThoughtsDropdown">
-                <option value="0">0 Continue</option>
-                <option value="1">1 Continue</option>
-                <option value="2">2 Continue</option>
-                <option value="3">3 Continue</option>
-                <option value="4">4 Continue</option>
-                <option value="5">5 Continue</option>
-            </select>
+			<input type="number" id="continueThoughtsInput" min="0" max="999" step="1" value="0">
 			
 			<select id="modelDropdown">
                 <option value="gpt-4">gpt-4</option>
@@ -193,9 +186,7 @@
 				// Set the position of the prompt node at the center of the mindmap
 				promptPosition = { x: size , y: size };
 			}
-			
-
-			
+					
 			let g = svg.append("g");
 
 			console.log(promptPosition)
@@ -359,33 +350,38 @@
 				})
 				.attr("stroke-width", 4)
 				.attr("stroke", "black");
-
+				
+			// Calculate the radius based on the length of the task
+			var baseRadius = 100;
+			var additionalRadius = Math.sqrt(task.length) * 10;  // Adjust the scale as necessary
+			var promptRadius = baseRadius + additionalRadius;
 								
 			// Create a circle for the initial prompt
 			var prompt = g.append("circle")
-				.data([{x: promptPosition.x, y: promptPosition.y}])  // bind data with x and y attributes
+				.data([{ x: promptPosition.x, y: promptPosition.y }]) // bind data with x and y attributes
 				.attr("class", "prompt")
 				.attr("cx", promptPosition.x)
 				.attr("cy", promptPosition.y)
-				 .attr("r", function(d) { 
-					// Calculate radius based on the length of the task
-					var baseRadius = 100;
-					var additionalRadius = Math.sqrt(task.length) * 10;  // Adjust the scale as necessary
-					return baseRadius + additionalRadius;
-				})
+				.attr("r", promptRadius)
 				.style("fill", "lightgray")
 				.style("stroke", "black")
 				.style("stroke-width", "2px")
 				.on("click", function (d, i) {
 					alert(task);
-				})
+				});
+				
+			// Calculate the label position to center it inside the prompt circle
+			var labelX = promptPosition.x - promptRadius;
+			var labelY = promptPosition.y - promptRadius;
+			var labelWidth = 2 * promptRadius;
+			var labelHeight = 2 * promptRadius;
 
 			// Create a label for the initial prompt
 			g.append("foreignObject")
-				.attr("x", promptPosition.x - 100)
-				.attr("y", promptPosition.y - 100)
-				.attr("width", 200)
-				.attr("height", 200)
+				.attr("x", labelX)
+				.attr("y", labelY)
+				.attr("width", labelWidth)
+				.attr("height", labelHeight)
 				.append("xhtml:div")
 				.style("display", "flex")
 				.style("justify-content", "center")
@@ -703,21 +699,52 @@
 				.attr("cy", 0)
 				.style("fill", "white")
 				.style("stroke", "black")
-				.style("stroke-width", "2px");
+				.style("stroke-width", "2px");	
+
+		<!-- function addContinueButton(thoughtID) { -->
+			<!-- // Get the thought's foreignObject -->
+			<!-- var thoughtForeignObject = document.querySelector(".thought-" + thoughtID + " foreignObject"); -->
+			
+			<!-- // Check if the thoughtForeignObject exists before proceeding -->
+			<!-- if (thoughtForeignObject) { -->
+				<!-- // Create a div for the button -->
+				<!-- var buttonDiv = document.createElement("div"); -->
+				<!-- buttonDiv.classList.add("continue-button"); -->
+				<!-- buttonDiv.textContent = "Continue"; -->
+
+				<!-- // Add the button to the thought's foreignObject -->
+				<!-- thoughtForeignObject.appendChild(buttonDiv); -->
+
+				<!-- // Add a click event listener to the button -->
+				<!-- buttonDiv.addEventListener("click", function () { -->
+					<!-- // Your logic for handling the continuation of the thought goes here -->
+					<!-- // For example, you could display a prompt for the user to enter their continuation -->
+					<!-- var continuationText = prompt("Enter your continuation for thought " + thoughtID + ":"); -->
+
+					<!-- // Once you have the continuation text, you can proceed with your continuation logic -->
+					<!-- // For example, you can call the API with the continuation text and the parent thought ID -->
+					<!-- // and then update the mindmap with the new thought and link -->
+				<!-- }); -->
+			<!-- } else { -->
+				<!-- // Handle the case where the thoughtForeignObject is not found -->
+				<!-- console.error("Thought foreignObject not found for thought ID: " + thoughtID); -->
+			<!-- } -->
+		<!-- } -->
 
 			// Add labels to the groups
 			thoughtGroups.append("foreignObject")
 				.attr("class", "thought-label") // Changed class name
 				.attr("x", function(d) { return -d.circleRadius; }) // Shift to the left
 				.attr("y", function(d) { return -d.circleRadius; }) // Shift up
-				.attr("width", function(d) { return d.circleRadius * 2; })
-				.attr("height", function(d) { return d.circleRadius * 2; })
+				.attr("width", function(d) { return d.circleRadius * 2; }) // Adjust width based on circle radius
+				.attr("height", function(d) { return d.circleRadius * 2; }) // Adjust height based on circle radius
 				.append("xhtml:div") // directly append div to foreignObject
 				.attr("class", "thought-text")
 				.html(function(d) {
 					var currentThoughtID = d.id.split('-')[1];
-					if (d.text.Item.length > 100) {
-						return "<strong>" + currentThoughtID + ":</strong> " + d.text.Item.slice(0, 100) + "...";  // Truncate the text and add ellipsis
+					var maxChars = Math.floor(d.circleRadius / 1); // Adjust the factor as needed to control truncation
+					if (d.text.Item.length > maxChars) {
+						return "<strong>" + currentThoughtID + ":</strong> " + d.text.Item.slice(0, maxChars) + "..."; // Truncate the text and add ellipsis
 					} else {
 						return "<strong>" + currentThoughtID + ":</strong> " + d.text.Item;
 					}
@@ -725,8 +752,8 @@
 				.style("display", "flex")
 				.style("justify-content", "center")
 				.style("align-items", "center")
-				.style("width", "100%")
-				.style("height", "100%")
+				.style("width", function(d) { return d.circleRadius * 2 + "px"; }) // Set width as per circle radius
+				.style("height", function(d) { return d.circleRadius * 2 + "px"; }) // Set height as per circle radius
 				.style("font", "20px roboto")
 				.style("text-align", "center")
 				.style("word-wrap", "break-word")
@@ -845,6 +872,9 @@
 						svg.select('#line-thought-' + parentThoughtID).classed("low-opacity", false);
 						svg.select('.thought-' + parentThoughtID).select("foreignObject div").classed("low-opacity", false);
 					}
+					
+					<!-- // Add a continue button to the parent thought -->
+					<!-- addContinueButton(parentThoughtID); -->
 
 				})
 				.on("mouseleave", function (event, d) {
@@ -1019,15 +1049,15 @@
 				var modelDropdown = document.getElementById("modelDropdown");
 				var model = modelDropdown.options[modelDropdown.selectedIndex].value;
 
-				var continueThoughtsDropdown = document.getElementById("continueThoughtsDropdown");
-				var continueCount = continueThoughtsDropdown.options[continueThoughtsDropdown.selectedIndex].value;
+				var continueThoughtsInput = document.getElementById("continueThoughtsInput");
+				var continueCount = parseInt(continueThoughtsInput.value);
 				
 				if (task != null && taskType != null) {
 					callApi(task, taskType, continueCount, model);
 				}
 			});
 		});
-
+		
 	</script>
 </body>
 </html>

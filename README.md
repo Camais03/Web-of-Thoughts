@@ -39,7 +39,7 @@ I didn't observe much of an improvement from GPT 3.5 but did find that it got qu
 
 It could be considered an improvement given that when testing ChatGPT it averaged 4/10 and my Web of Thoughts got 7/10 but this isn't an average and is just what it got combining the results of the 3 continue test and the 5 continue test. I need to do more tests so nothing here is conclusive at all.
 
-I would've like to have tested GPT 4 but I was charged 99 cents or 1 cent off what was required to be given access. If anyone does want to test it out with GPT 4 please let me know your results :)
+I would've like to have tested GPT 4 but I was charged 99 cents so 1 cent off what was required to be given access. If anyone does want to test it out with GPT 4 please let me know your results :)
 
 ![](https://github.com/Camais03/Web-of-Thoughts/blob/main/readme/overview.gif)
 
@@ -51,3 +51,23 @@ When loaded the you can drag any of the mindmap nodes around and click on a thou
 You can move the mindmap around and scale it up and down by using the scroll wheel or zoom in/out buttons. Double clicking also zooms in. (Currently if a mindmap exceeds the width of the webpage you can scroll left, still trying to fix).
 
 You can save and load mindmaps in a JSON format.
+
+## Issues:
+Currently there are some bugs. 
+
+- Loading a Mindmap when another is already loaded will load the mindmap below. I recommend refreshing the page before loading a new mindmap.
+- Sometimes, GPT may continue the same thought causing an overlap. You can just move these out the way.
+- Currently can't scroll left when the mindmap that is bigger than the browser window loads. You can still drag the mindmap the the right.
+- Occasionally the controls get's pushed off screen. You can zoom out (ctrl - ) and it should come back in view.
+- Occasionally the mindmap doesn't generate correctly. Needs fixing, unified solution should still work though.
+- 
+
+## Future Features:
+Depending on the popularity of the project I have these features planned:
+
+- Big Refractor of code. (I used GPT-4 to help me with most of this but am aware that the code is quite messy currently).
+- Ability to choose to continue any thoughts and add own input to GPT.
+- Get GPT to organise thoughts into concepts or ideas for even larger mindmaps.
+- Ability to use other models.
+- Ability to use plugins like Wolfram Alpha to further improve perfromance.
+- Better UI, bug fixes, and better usability.

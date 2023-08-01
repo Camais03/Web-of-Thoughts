@@ -5,6 +5,8 @@
 ## Overview:
 Web of thoughts is a web app that uses the OpenAI API to generate mindmaps based on a given prompt. These mindmaps will first generate initial thoughts, link those thoughts, critique those thoughts and finally try to resolve these thoughts into a final answer.
 
+Part of my inspiration was trying to get ChatGPT to think through problems more like humans do (having thoughts, linking those thoughts, thinking of critiques to those thoughts and finally resolving those thoughts into a final answer).
+
 It can be a bit buggy so apologies if any errors occur.
 
 ![](https://github.com/Camais03/Web-of-Thoughts/blob/main/readme/Unified%20Solution.PNG)

@@ -37,9 +37,11 @@ There are some examples inside the examples folder. I tested the 1st 10 question
 
 I didn't observe much of an improvement from GPT 3.5 but did find that it got question 2 right when ChatGPT never did. However, it would get questions wrong that ChatGPT never did as well.
 
-It could be considered an improvement given that when testing ChatGPT it averaged 4/10 and my Web of Thoughts got 7/10 but this isn't an average and is just what it got combining the results of the 3 continue test and the 5 continue test. I need to do more tests so nothing here is conclusive at all.
+It could be considered an improvement given that when testing ChatGPT it averaged 4/10 and my Web of Thoughts got 7/10 but this isn't an average and is just what it got combining the results of the 3 continue test and the 5 continue test. I need to do more tests so nothing here is conclusive at all. COT is included in my prompt which I haven't tested with ChatGPT so the improved performance could be due to that.
 
 I would've like to have tested GPT 4 but I was charged 99 cents so 1 cent off what was required to be given access. If anyone does want to test it out with GPT 4 please let me know your results :)
+
+You can find the questions I used in /Formal-Logic-Questions. They are formatted so you can just copy and paste them.
 
 ![](https://github.com/Camais03/Web-of-Thoughts/blob/main/readme/overview.gif)
 
@@ -60,7 +62,6 @@ Currently there are some bugs.
 - Currently can't scroll left when the mindmap that is bigger than the browser window loads. You can still drag the mindmap the the right.
 - Occasionally the controls get's pushed off screen. You can zoom out (ctrl - ) and it should come back in view.
 - Occasionally the mindmap doesn't generate correctly. Needs fixing, unified solution should still work though.
-- 
 
 ## Future Features:
 Depending on the popularity of the project I have these features planned:

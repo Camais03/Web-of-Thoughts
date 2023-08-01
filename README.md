@@ -50,6 +50,8 @@ You can find the questions I used in /Formal-Logic-Questions. They are formatted
 ## Control:
 When loaded the you can drag any of the mindmap nodes around and click on a thought to get a sidebar with more information (linked thoughts, continued thoughts, etc.).
 
+![](https://github.com/Camais03/Web-of-Thoughts/blob/main/readme/dragging.gif)
+
 ![](https://github.com/Camais03/Web-of-Thoughts/blob/main/readme/sidebar.gif)
 
 You can move the mindmap around and scale it up and down by using the scroll wheel or zoom in/out buttons. Double clicking also zooms in. (Currently if a mindmap exceeds the width of the webpage you can scroll left, still trying to fix).

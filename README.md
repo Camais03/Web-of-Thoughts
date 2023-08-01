@@ -1,4 +1,4 @@
-# Web-of-Thoughts
+# Web-of-Thoughts v0.1
 
 ![](https://github.com/Camais03/Web-of-Thoughts/blob/main/readme/Main%20Page.PNG)
 

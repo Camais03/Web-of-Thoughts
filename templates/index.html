@@ -254,7 +254,8 @@
 
 			// Assign unique id to each thought using its 'ID' field if it exists
 			thoughts.forEach(function(thought, i) {
-				thought.circleRadius = Math.sqrt(thought.text.Item.length) * 10
+				var baseRadius = 100
+				thought.circleRadius = Math.sqrt(thought.text.Item.length) * 10 + baseRadius
 				if (thought.text && thought.text.ID) {
 					thought.id = 'thought-' + thought.text.ID
 				} else {
@@ -799,11 +800,9 @@
 
 					// Find thoughts connected to this thought and add their information
 					var currentThoughtID = parseInt(d.id.split('-')[1]); // Get the current thought ID
-					console.log('Current Thought ID:', currentThoughtID);  // Log the current thought ID
 					var connectedLinks = linked_thoughts.filter(function(link) {
 						return link.source == currentThoughtID || link.target == currentThoughtID;
 					});
-					console.log('Connected Links:', connectedLinks);  // Log the connected links
 					connectedLinks.forEach(function(link, index) {
 						var connectedThought = thoughts[link.source == currentThoughtID ? link.target : link.source];
 						console.log('Connected Thought:', connectedThought);  // Log the connected thought
@@ -858,7 +857,6 @@
 					// Highlight continued thoughts and their lines
 					thoughts.forEach(function(thoughtChild) {
 						if (thoughtChild.text.Type === 'Continued Thought' && 'thought-' + thoughtChild.text['Parent ID'] === d.id) {
-							console.log('Hovering over a parent thought with child: ', thoughtChild);
 							svg.select('#circle-' + thoughtChild.id).classed("low-opacity", false);
 							svg.select('#line-' + thoughtChild.id).classed("low-opacity", false);
 							svg.select('#circle-' + thoughtChild.id).select("foreignObject div").classed("low-opacity", false);
@@ -928,10 +926,6 @@
 							.attr("y1", y);
 					}
 				});
-
-
-
-			  console.log('Dragging thought with id: ', d.id);  // log the id of the dragged thought
 			})
 			.on("end", function (event) {
 			  d3.select(this).classed("active", false);
@@ -940,7 +934,6 @@
 			// Apply drag behavior to thought groups
 			dragHandler(thoughtGroups);
 
-			console.log('Saving unified_solution:', unified_solution);
 			function saveMindMap(thoughts, linked_thoughts, task, unified_solution) {
 				const data = {
 					thoughts: thoughts,

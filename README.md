@@ -22,8 +22,7 @@ Continuing a thought can get expensive as we run through the process of linking 
 ### Model Type:
 You can select the model type based on the models you have access to.
 
-##
-Examples:
+## Examples:
 There are some examples inside the examples folder. I tested the 1st 10 questions of formal logic from the MMLU test dataset avaliable here: https://huggingface.co/datasets/cais/mmlu/viewer/formal_logic/test
 
 I didn't observe much of an improvement from GPT 3.5 but did find that it got question 2 right when ChatGPT never did. However, it would get questions wrong that ChatGPT never did as well.

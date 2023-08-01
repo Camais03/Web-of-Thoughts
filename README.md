@@ -12,6 +12,8 @@ It can be a bit buggy so apologies if any errors occur.
 ## Setting up:
 To set up simply open the config and paste in your OpenAI API key. Then just run app.exe and type localhost:5000 to access in your browser (or copy the server address).
 
+If you have all the dependencies installed then you can also run Web of Thoughts.bat
+
 ## How to use:
 To generate a mindmap click the start button and you will be prompted to enter a prompt. 
 
